@@ -1,0 +1,133 @@
+--------------------------------------------------------
+SELECT EXTRACT(YEAR FROM release), count(*)  FROM films
+WHERE EXTRACT(YEAR FROM release) = 2020
+GROUP BY EXTRACT(YEAR FROM release)
+ORDER BY 1;
+-------------------------------------------------------
+SELECT *
+FROM films f
+  LEFT JOIN LATERAL (
+            SELECT array_agg(cl.name)
+            FROM collections_films cf
+              JOIN collections cl ON cf.id = cl.id
+            WHERE f.id = cf.film_id
+            ) clf ON TRUE
+  LEFT JOIN LATERAL (
+            SELECT array_agg(cl.name)
+            FROM companies_films cf
+              JOIN companies cl ON cf.id = cl.id
+            WHERE f.id = cf.film_id
+            ) com ON TRUE
+  LEFT JOIN LATERAL (
+            SELECT array_agg(cl.name)
+            FROM genres_films cf
+              JOIN genres cl ON cf.id = cl.id
+            WHERE f.id = cf.film_id
+            ) gen ON TRUE
+  LEFT JOIN LATERAL (
+            SELECT array_agg(cl.name)
+            FROM keywords_films cf
+              JOIN keywords cl ON cf.id = cl.id
+            WHERE f.id = cf.film_id
+            ) key ON TRUE
+WHERE id = 2428;
+
+-------------------------------------------------------
+
+SELECT comp.name
+FROM (SELECT cf.id
+      FROM films f
+        JOIN companies_films cf ON f.id = cf.film_id
+      ORDER BY f.budget DESC
+      LIMIT 100) AS ss
+  LEFT JOIN LATERAL (SELECT name
+                     FROM companies c
+                     WHERE c.id = ss.id) comp ON TRUE
+GROUP BY comp.name
+ORDER BY count(*) DESC
+LIMIT 1;
+
+-------------------------------------------------------
+
+SELECT c.name
+FROM (
+       SELECT sum(f.budget) s, cf.id
+       FROM films f
+         JOIN companies_films cf ON cf.film_id = f.id
+       GROUP BY cf.id
+       ORDER BY s DESC
+       LIMIT 1) AS ss
+  JOIN companies c ON c.id = ss.id;
+
+-------------------------------------------------------
+
+SELECT gl.name, gg.name
+FROM (
+       SELECT LEAST(gf1.id, gf2.id) l, GREATEST(gf1.id, gf2.id) g
+       FROM genres_films gf1
+         JOIN genres_films gf2 ON gf1.film_id = gf2.film_id
+       WHERE gf1.id != gf2.id
+       GROUP BY 1, 2
+       ORDER BY count(*) DESC
+       LIMIT 1) AS ss
+  JOIN genres gl ON gl.id = ss.l
+  JOIN genres gg ON gg.id = ss.g;
+
+-------------------------------------------------------
+
+SELECT (SELECT name
+        FROM keywords k
+        WHERE id = kf.id)
+FROM genres_films gf
+  JOIN keywords_films kf ON gf.film_id = kf.film_id
+WHERE gf.id IN (SELECT id
+                FROM genres g
+                WHERE g.name = 'Drama')
+GROUP BY kf.film_id, kf.id
+ORDER BY count(*) DESC
+LIMIT 3;
+
+-------------------------------------------------------
+
+SELECT id, array_agg(l.name), COALESCE(array_length(array_agg(l.name), 1) - 1, 0)
+FROM (
+       SELECT id
+       FROM films f
+       ORDER BY f.rating DESC
+       LIMIT 100) AS ss
+  LEFT JOIN languages l ON ss.id = l.film_id
+GROUP BY id;
+
+-------------------------------------------------------
+
+SELECT EXTRACT('YEAR' FROM f.release)
+  , MAX(f.rating)
+  , MIN(f.rating)
+FROM films f
+  JOIN companies_films cf ON f.id = cf.film_id
+  JOIN companies c ON c.id = cf.id
+WHERE c.name = 'Worldwide'
+GROUP BY EXTRACT('YEAR' FROM f.release);
+
+-------------------------------------------------------
+
+SELECT f2.name, f2.release
+FROM collections_films cf1
+  JOIN films f1 ON cf1.film_id = f1.id
+  JOIN collections_films cf2 ON cf1.id = cf2.id
+  JOIN films f2 ON cf2.film_id = f2.id
+WHERE f2.release < f1.release
+      AND cf1.film_id = 1893
+ORDER BY f2.release
+;
+
+-------------------------------------------------------
+
+SELECT DISTINCT ON (1) EXTRACT('YEAR' FROM f.release), first_value(f.name)
+OVER (
+  PARTITION BY EXTRACT('YEAR' FROM f.release)
+  ORDER BY f.budget DESC )
+FROM films f
+  JOIN keywords_films kf ON kf.film_id = f.id
+  JOIN keywords k ON k.id = kf.id
+WHERE k.name = 'human animal relationship';

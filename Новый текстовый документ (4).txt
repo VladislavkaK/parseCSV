@@ -1,0 +1,164 @@
+CREATE USER dev WITH PASSWORD 'dev';
+
+DROP TABLE IF EXISTS films;
+
+CREATE TABLE films (
+  id          BIGSERIAL PRIMARY KEY,
+  name        TEXT NOT NULL,
+  description TEXT NOT NULL,
+  link        TEXT,
+  release     DATE,
+  rating      NUMERIC(3, 1) CHECK (rating >= 0 AND rating <= 10),
+  budget      INT8 NOT NULL
+);
+
+GRANT ALL ON films TO PUBLIC;
+
+DROP TABLE IF EXISTS keywords_films;
+
+CREATE TABLE keywords_films (
+  film_id INT8,
+  id      INT8,
+  name    TEXT
+
+);
+
+CREATE INDEX ON keywords_films (film_id);
+
+ANALYSE keywords_films;
+
+GRANT ALL ON keywords_films TO PUBLIC;
+
+DROP TABLE IF EXISTS genres_films;
+
+CREATE TABLE genres_films (
+  film_id INT8,
+  id      INT8,
+  name    TEXT
+
+);
+
+CREATE INDEX ON genres_films (film_id);
+
+ANALYSE genres_films;
+
+GRANT ALL ON genres_films TO PUBLIC;
+
+DROP TABLE IF EXISTS companies_films;
+
+CREATE TABLE companies_films (
+  film_id INT8,
+  id      INT8,
+  name    TEXT
+
+);
+CREATE INDEX ON companies_films (film_id);
+
+ANALYSE companies_films;
+
+GRANT ALL ON companies_films TO PUBLIC;
+
+
+
+DROP TABLE IF EXISTS collections_films;
+
+CREATE TABLE collections_films (
+  film_id INT8,
+  id      INT8,
+  name    TEXT
+
+);
+
+
+
+
+CREATE INDEX ON collections_films (film_id);
+
+ANALYSE collections_films;
+
+GRANT ALL ON collections_films TO PUBLIC;
+
+
+CREATE TABLE languages (
+  film_id INT8,
+  name    TEXT
+
+);
+GRANT ALL ON languages TO PUBLIC;
+
+
+
+
+CREATE TABLE companies AS
+  SELECT DISTINCT
+    c.id
+    , c.name
+  FROM companies_films c
+;
+
+ALTER TABLE companies_films
+  DROP COLUMN name
+;
+
+CREATE TABLE collections AS
+  SELECT DISTINCT
+    c.id
+    , c.name
+  FROM collections_films c
+;
+
+ALTER TABLE collections_films
+  DROP COLUMN name
+;
+
+CREATE TABLE genres AS
+  SELECT DISTINCT
+    c.id
+    , c.name
+  FROM genres_films c
+;
+
+ALTER TABLE genres_films
+  DROP COLUMN name
+;
+
+CREATE TABLE keywords AS
+  SELECT DISTINCT
+    c.id
+    , c.name
+  FROM keywords_films c
+;
+
+ALTER TABLE keywords_films
+  DROP COLUMN name
+;
+
+ALTER TABLE collections_films ADD PRIMARY KEY (id,film_id);
+ALTER TABLE companies ADD PRIMARY KEY (id);
+ALTER TABLE genres ADD PRIMARY KEY (id);
+ALTER TABLE keywords ADD PRIMARY KEY (id);
+
+DELETE FROM collections_films  WHERE film_id NOT IN (SELECT id FROM films);
+DELETE FROM companies_films  WHERE film_id NOT IN (SELECT id FROM films);
+DELETE FROM genres_films  WHERE film_id NOT IN (SELECT id FROM films);
+DELETE FROM keywords_films  WHERE film_id NOT IN (SELECT id FROM films);
+
+ALTER TABLE collections_films ADD FOREIGN KEY (film_id) REFERENCES films;
+ALTER TABLE companies_films ADD FOREIGN KEY (film_id) REFERENCES films;
+ALTER TABLE genres_films ADD FOREIGN KEY (film_id) REFERENCES films;
+ALTER TABLE keywords_films ADD FOREIGN KEY (film_id) REFERENCES films;
+
+
+DELETE FROM companies_films  WHERE    id NOT IN (SELECT id FROM companies);
+DELETE FROM genres_films  WHERE       id NOT IN (SELECT id FROM genres);
+DELETE FROM keywords_films  WHERE     id NOT IN (SELECT id FROM keywords);
+
+
+ALTER TABLE companies_films ADD FOREIGN KEY   (id) REFERENCES companies ;
+ALTER TABLE genres_films ADD FOREIGN KEY      (id) REFERENCES genres ;
+ALTER TABLE keywords_films ADD FOREIGN KEY    (id) REFERENCES keywords ;
+
+
+
+
+

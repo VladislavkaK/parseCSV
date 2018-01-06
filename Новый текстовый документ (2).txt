@@ -1,0 +1,91 @@
+CREATE TABLE films (
+  id          BIGSERIAL PRIMARY KEY,
+  name        TEXT NOT NULL,
+  description TEXT NOT NULL,
+  link        TEXT,
+  release     DATE,
+  rating      NUMERIC(3, 1) CHECK (rating >= 0 AND rating <= 10),
+  budget      INT8 NOT NULL
+);
+
+CREATE TABLE keywords_films (
+  film_id INT8,
+  id      INT8,
+  name    TEXT
+
+);
+
+CREATE INDEX ON keywords_films (film_id);
+
+CREATE TABLE genres_films (
+  film_id INT8,
+  id      INT8,
+  name    TEXT
+
+);
+
+CREATE INDEX ON genres_films (film_id);
+
+CREATE TABLE companies_films (
+  film_id INT8,
+  id      INT8,
+  name    TEXT
+
+);
+CREATE INDEX ON companies_films (film_id);
+
+CREATE TABLE collections_films (
+  film_id INT8,
+  id      INT8,
+  name    TEXT
+
+);
+
+CREATE INDEX ON collections_films (film_id);
+
+CREATE TABLE languages (
+  film_id INT8,
+  name    TEXT
+
+);
+
+
+CREATE TABLE companies AS
+  SELECT DISTINCT
+    c.id
+    , c.name
+  FROM companies_films c
+;
+
+CREATE TABLE collections AS
+  SELECT DISTINCT
+    c.id
+    , c.name
+  FROM collections_films c
+;
+
+CREATE TABLE genres AS
+  SELECT DISTINCT
+    c.id
+    , c.name
+  FROM genres_films c
+;
+
+CREATE TABLE keywords AS
+  SELECT DISTINCT
+    c.id
+    , c.name
+  FROM keywords_films c
+;
+
+ALTER TABLE companies ADD PRIMARY KEY (id);
+ALTER TABLE genres ADD PRIMARY KEY (id);
+ALTER TABLE keywords ADD PRIMARY KEY (id);
+
+ALTER TABLE collections_films ADD FOREIGN KEY (film_id) REFERENCES films;
+ALTER TABLE companies_films ADD FOREIGN KEY (film_id) REFERENCES films;
+ALTER TABLE genres_films ADD FOREIGN KEY (film_id) REFERENCES films;
+
+ALTER TABLE companies_films ADD FOREIGN KEY   (id) REFERENCES companies ;
+ALTER TABLE genres_films ADD FOREIGN KEY      (id) REFERENCES genres ;
+ALTER TABLE keywords_films ADD FOREIGN KEY    (id) REFERENCES keywords ;
